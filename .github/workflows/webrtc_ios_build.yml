@@ -32,14 +32,30 @@ jobs:
       run: |
         cd webrtc-ios/src
         gn gen out/ios_arm64 \
-          --args='target_os="ios" target_cpu="arm64" target_environment="device" is_component_build=false is_debug=false use_xcode_clang=true use_system_xcode=true'
+          --args='
+            target_os="ios"
+            target_cpu="arm64"
+            target_environment="device"
+            is_component_build=false
+            is_debug=false
+            use_xcode_clang=true
+            use_system_xcode=true
+          '
         ninja -C out/ios_arm64 sdk
 
     - name: Build for Simulator (arm64)
       run: |
         cd webrtc-ios/src
         gn gen out/ios_simulator \
-          --args='target_os="ios" target_cpu="arm64" target_environment="simulator" is_component_build=false is_debug=false use_xcode_clang=true use_system_xcode=true'
+          --args='
+            target_os="ios"
+            target_cpu="arm64"
+            target_environment="simulator"
+            is_component_build=false
+            is_debug=false
+            use_xcode_clang=true
+            use_system_xcode=true
+          '
         ninja -C out/ios_simulator sdk
 
     - name: Create XCFramework
