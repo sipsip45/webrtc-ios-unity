@@ -36,6 +36,7 @@ jobs:
             target_os="ios"
             target_cpu="arm64"
             target_environment="device"
+            ios_enable_code_signing=false
             is_component_build=false
             is_debug=false
             use_xcode_clang=true
@@ -46,17 +47,18 @@ jobs:
     - name: Build for Simulator (arm64)
       run: |
         cd webrtc-ios/src
-        gn gen out/ios_simulator \
+        gn gen out/ios_simulator_arm64 \
           --args='
             target_os="ios"
             target_cpu="arm64"
             target_environment="simulator"
+            ios_enable_code_signing=false
             is_component_build=false
             is_debug=false
             use_xcode_clang=true
             use_system_xcode=true
           '
-        ninja -C out/ios_simulator sdk
+        ninja -C out/ios_simulator_arm64 sdk
 
     - name: Create XCFramework
       run: |
@@ -64,13 +66,10 @@ jobs:
 
         mkdir -p xcframework
 
-        DEVICE_LIB=out/ios_arm64/obj/sdk/libwebrtc.a
-        SIMULATOR_LIB=out/ios_simulator/obj/sdk/libwebrtc.a
-
         xcodebuild -create-xcframework \
-          -library $DEVICE_LIB \
+          -library out/ios_arm64/obj/sdk/libwebrtc.a \
           -headers sdk \
-          -library $SIMULATOR_LIB \
+          -library out/ios_simulator_arm64/obj/sdk/libwebrtc.a \
           -headers sdk \
           -output xcframework/WebRTC.xcframework
 
@@ -79,4 +78,3 @@ jobs:
       with:
         name: webrtc-ios-xcframework
         path: webrtc-ios/src/xcframework/WebRTC.xcframework
-
