@@ -1,4 +1,4 @@
-name: Build WebRTC for iOS
+name: Build WebRTC iOS XCFramework
 
 on:
   workflow_dispatch:
@@ -28,15 +28,40 @@ jobs:
         fetch --nohooks webrtc_ios
         gclient sync
 
-    - name: Build WebRTC (iOS)
+    - name: Build for Device (arm64)
       run: |
         cd webrtc-ios/src
-        gn gen out/ios --args='target_os="ios" target_cpu="arm64" is_component_build=false is_debug=false'
-        ninja -C out/ios
+        gn gen out/ios_arm64 \
+          --args='target_os="ios" target_cpu="arm64" target_environment="device" is_component_build=false is_debug=false'
+        ninja -C out/ios_arm64
 
-    - name: Upload Build Artifact
+    - name: Build for Simulator (arm64 + x64)
+      run: |
+        cd webrtc-ios/src
+        gn gen out/ios_simulator \
+          --args='target_os="ios" target_cpu="arm64" target_environment="simulator" is_component_build=false is_debug=false'
+        ninja -C out/ios_simulator
+
+    - name: Create XCFramework
+      run: |
+        cd webrtc-ios/src
+
+        mkdir -p xcframework
+
+        # 예시 라이브러리 이름 변경 필요 시 수정
+        DEVICE_LIB=out/ios_arm64/obj/sdk/libwebrtc.a
+        SIMULATOR_LIB=out/ios_simulator/obj/sdk/libwebrtc.a
+
+        xcodebuild -create-xcframework \
+          -library $DEVICE_LIB \
+          -headers sdk \
+          -library $SIMULATOR_LIB \
+          -headers sdk \
+          -output xcframework/WebRTC.xcframework
+
+    - name: Upload WebRTC XCFramework
       uses: actions/upload-artifact@v4
       with:
-        name: webrtc-ios-build
-        path: webrtc-ios/src/out/ios
+        name: webrtc-ios-xcframework
+        path: webrtc-ios/src/xcframework/WebRTC.xcframework
 
