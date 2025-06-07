@@ -1,107 +1,66 @@
-name: Build WebRTC iOS
+name: Build WebRTC for iOS (Unity)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-webrtc-ios:
+  build:
     runs-on: macos-13
 
     steps:
-      - name: Checkout this repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install Homebrew dependencies
         run: |
           brew update
-          brew install python@3.11 ninja git
+          brew install git ninja gn python@3.11 || true
+          brew link --overwrite python@3.11
+          echo "/usr/local/opt/python@3.11/libexec/bin" >> $GITHUB_PATH
 
-          # Link Python if needed
-          brew link --overwrite python@3.11 || true
-          echo 'export PATH="/usr/local/opt/python@3.11/bin:$PATH"' >> ~/.bash_profile
-          source ~/.bash_profile
-
-      - name: Setup depot_tools
+      - name: Clone depot_tools
         run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          echo "$PWD/depot_tools" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
 
-      - name: Fetch WebRTC
+      - name: Clone WebRTC (iOS)
         run: |
           mkdir webrtc-ios
           cd webrtc-ios
           fetch --nohooks webrtc_ios
           gclient sync
 
-      - name: Generate build files for device (arm64)
+      - name: Apply Patch (if needed)
         run: |
           cd webrtc-ios/src
-          gn gen out/ios_arm64 --args='
-            target_os="ios"
-            target_cpu="arm64"
-            target_environment="device"
-            ios_enable_code_signing=false
-            is_component_build=false
-            is_debug=false
-            use_xcode_clang=true
-            use_system_xcode=true
-            rtc_include_tests=false
-          '
+          # 예시: 필요한 경우 patch 적용
+          # git apply ../../patches/fix.patch
 
-      - name: Build for device (arm64)
+      - name: Build WebRTC for iOS Device
         run: |
           cd webrtc-ios/src
-          ninja -C out/ios_arm64 sdk
+          gn gen out/ios_arm64 --args='target_os="ios" target_cpu="arm64" ios_deployment_target="13.0" is_component_build=false rtc_include_tests=false'
+          ninja -C out/ios_arm64
 
-      - name: Generate build files for simulator (x64)
+      - name: Build WebRTC for iOS Simulator
         run: |
           cd webrtc-ios/src
-          gn gen out/ios_simulator_x64 --args='
-            target_os="ios"
-            target_cpu="x64"
-            target_environment="simulator"
-            ios_enable_code_signing=false
-            is_component_build=false
-            is_debug=false
-            use_xcode_clang=true
-            use_system_xcode=true
-            rtc_include_tests=false
-          '
+          gn gen out/ios_simulator --args='target_os="ios" target_cpu="x64" ios_deployment_target="13.0" is_component_build=false rtc_include_tests=false'
+          ninja -C out/ios_simulator
 
-      - name: Build for simulator (x64)
+      - name: Create XCFramework
         run: |
           cd webrtc-ios/src
-          ninja -C out/ios_simulator_x64 sdk
+          mkdir -p out/xcframework
+          xcodebuild -create-xcframework \
+            -library out/ios_arm64/obj/libwebrtc.a \
+            -headers out/ios_arm64/gen/sdk \
+            -library out/ios_simulator/obj/libwebrtc.a \
+            -headers out/ios_simulator/gen/sdk \
+            -output out/xcframework/WebRTC.xcframework
 
-      - name: Generate build files for simulator (arm64)
-        run: |
-          cd webrtc-ios/src
-          gn gen out/ios_simulator_arm64 --args='
-            target_os="ios"
-            target_cpu="arm64"
-            target_environment="simulator"
-            ios_enable_code_signing=false
-            is_component_build=false
-            is_debug=false
-            use_xcode_clang=true
-            use_system_xcode=true
-            rtc_include_tests=false
-          '
-
-      - name: Build for simulator (arm64)
-        run: |
-          cd webrtc-ios/src
-          ninja -C out/ios_simulator_arm64 sdk
-
-      - name: Archive build outputs
-        run: |
-          mkdir -p output
-          cp -r webrtc-ios/src/out/ios_arm64 output/device_arm64
-          cp -r webrtc-ios/src/out/ios_simulator_x64 output/simulator_x64
-          cp -r webrtc-ios/src/out/ios_simulator_arm64 output/simulator_arm64
-
-      - name: Upload build artifacts
+      - name: Upload XCFramework Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: webrtc-ios-artifacts
-          path: output
+          name: WebRTC-iOS
+          path: webrtc-ios/src/out/xcframework/WebRTC.xcframework
