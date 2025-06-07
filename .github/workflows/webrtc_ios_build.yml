@@ -13,7 +13,8 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        brew install python@3.11 ninja
+        brew list ninja || brew install ninja
+        brew list python@3.11 || brew install python@3.11
         python3 -m ensurepip
         python3 -m pip install --upgrade pip
 
@@ -40,3 +41,4 @@ jobs:
       with:
         name: webrtc-ios-build
         path: webrtc-ios/src/out/ios
+
