@@ -1,0 +1,42 @@
+name: Build WebRTC for iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: |
+        brew install python@3.11 ninja
+        python3 -m ensurepip
+        python3 -m pip install --upgrade pip
+
+    - name: Clone depot_tools
+      run: |
+        git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        echo "$PWD/depot_tools" >> $GITHUB_PATH
+
+    - name: Fetch WebRTC (iOS)
+      run: |
+        mkdir webrtc-ios
+        cd webrtc-ios
+        fetch --nohooks webrtc_ios
+        gclient sync
+
+    - name: Build WebRTC (iOS)
+      run: |
+        cd webrtc-ios/src
+        gn gen out/ios --args='target_os="ios" target_cpu="arm64" is_component_build=false is_debug=false'
+        ninja -C out/ios
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: webrtc-ios-build
+        path: webrtc-ios/src/out/ios
