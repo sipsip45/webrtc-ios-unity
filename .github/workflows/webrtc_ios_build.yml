@@ -101,7 +101,7 @@ jobs:
           cp -r webrtc-ios/src/out/ios_simulator_arm64 output/simulator_arm64
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: webrtc-ios-artifacts
           path: output
