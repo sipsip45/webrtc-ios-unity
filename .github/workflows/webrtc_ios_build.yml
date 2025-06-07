@@ -8,14 +8,12 @@ jobs:
     runs-on: macos-13
 
     steps:
-    - name: Checkout
+    - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Install Dependencies
       run: |
         brew list ninja || brew install ninja
-        brew list python@3.11 || brew install python@3.11
-        python3 -m ensurepip
         python3 -m pip install --upgrade pip
 
     - name: Clone depot_tools
@@ -36,7 +34,7 @@ jobs:
         gn gen out/ios --args='target_os="ios" target_cpu="arm64" is_component_build=false is_debug=false'
         ninja -C out/ios
 
-    - name: Upload Artifacts
+    - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
         name: webrtc-ios-build
