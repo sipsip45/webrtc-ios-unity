@@ -40,8 +40,8 @@ jobs:
           is_debug=false
           symbol_level=0
           use_custom_libcxx=false
-          use_xcode_clang=false
           enable_ios_bitcode=false
+          ios_enable_code_signing=false
         '
         ninja -C out/ios
 
