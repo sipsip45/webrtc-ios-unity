@@ -1,4 +1,4 @@
-name: Resume WebRTC iOS Build
+name: Build WebRTC for iOS
 
 on:
   workflow_dispatch:
@@ -8,11 +8,8 @@ jobs:
     runs-on: macos-13
 
     steps:
-    - name: Download Patched WebRTC Source
-      uses: actions/download-artifact@v4
-      with:
-        name: webrtc-ios-patched
-        path: webrtc-ios
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
     - name: Install Dependencies
       run: |
@@ -24,10 +21,21 @@ jobs:
         git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
         echo "$PWD/depot_tools" >> $GITHUB_PATH
 
-    - name: Sync dependencies (in case)
+    - name: Fetch WebRTC (iOS)
       run: |
+        mkdir webrtc-ios
         cd webrtc-ios
+        fetch --nohooks webrtc_ios
         gclient sync
+
+    - name: Patch DEPS or source if needed
+      run: |
+        cd webrtc-ios/src
+        # 예: DEPS 수정 예시 (sed 사용 가능)
+        # sed -i '' 's/some_text/replacement/' DEPS
+        # echo 'Patched DEPS file'
+        # 또는 다른 파일/패치 적용
+        echo 'No patch needed currently'
 
     - name: Build WebRTC (iOS)
       run: |
