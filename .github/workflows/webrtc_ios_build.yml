@@ -28,14 +28,18 @@ jobs:
         fetch --nohooks webrtc_ios
         gclient sync
 
-    - name: Patch DEPS or source if needed
+    - name: Patch Protobuf constinit error
       run: |
         cd webrtc-ios/src
-        # 예: DEPS 수정 예시 (sed 사용 가능)
-        # sed -i '' 's/some_text/replacement/' DEPS
-        # echo 'Patched DEPS file'
-        # 또는 다른 파일/패치 적용
-        echo 'No patch needed currently'
+        PROTOBUF_DEF=third_party/protobuf/src/google/protobuf/port_def.inc
+
+        # 백업
+        cp $PROTOBUF_DEF ${PROTOBUF_DEF}.bak
+
+        # constinit 정의 무력화
+        sed -i '' 's/#  define PROTOBUF_CONSTINIT constinit/#  define PROTOBUF_CONSTINIT /' $PROTOBUF_DEF
+
+        echo "Patched $PROTOBUF_DEF to remove constinit (iOS/Xcode compatibility)"
 
     - name: Build WebRTC (iOS)
       run: |
@@ -49,8 +53,9 @@ jobs:
           is_debug=false
           symbol_level=0
           use_custom_libcxx=false
-          use_xcode_clang=false
           enable_ios_bitcode=false
+          ios_enable_code_signing=false
+          rtc_include_tests=false
         '
         ninja -C out/ios
 
